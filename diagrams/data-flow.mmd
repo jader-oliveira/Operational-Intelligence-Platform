@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant S as Source
+  participant C as Connector
+  participant E as Event Stream
+  participant N as Normalizer
+  participant D as Data Stores
+  participant G as Graph
+  participant W as Evidence Workflow
+  participant M as Models
+  participant P as Policy/Approval
+  participant X as Execution
+
+  S->>C: Inventory, events, config, references
+  C->>E: Raw canonical envelope
+  E->>N: Validate and normalize
+  N->>D: Store metadata and references
+  N->>G: Project nodes and relationships
+  W->>D: Query telemetry and history
+  W->>G: Query dependencies and changes
+  W->>M: Bounded evidence package
+  M->>P: Structured recommendation
+  P->>X: Approved action only
+  X->>D: Result and verification telemetry

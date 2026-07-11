@@ -1,0 +1,47 @@
+{
+  "id": "rec-001",
+  "incident_id": "inc-001",
+  "summary": "Reduce datastore contention by migrating two high-I/O VMs after validating storage and application constraints.",
+  "risk": "medium",
+  "confidence": 0.82,
+  "evidence_ids": [
+    "ev-metric-22",
+    "ev-event-09",
+    "ev-change-14"
+  ],
+  "alternatives": [
+    "Throttle backup workload",
+    "Move one VM to alternate datastore",
+    "Reschedule batch job"
+  ],
+  "preconditions": [
+    "Confirm alternate datastore capacity and latency",
+    "Confirm vMotion compatibility",
+    "Confirm no active snapshot consolidation"
+  ],
+  "backup_snapshot_guidance": [
+    "Do not create a new snapshot solely for this migration",
+    "Confirm recent application-consistent backup for the database VM"
+  ],
+  "steps": [
+    "Run placement dry-run",
+    "Obtain infrastructure and service-owner approval",
+    "Migrate first VM",
+    "Verify latency",
+    "Migrate second VM if threshold remains exceeded"
+  ],
+  "rollback": [
+    "Migrate VM back to original datastore if application or storage checks fail"
+  ],
+  "verification": [
+    "Datastore latency below threshold for 15 minutes",
+    "Application synthetic check passes",
+    "No new storage alarms"
+  ],
+  "required_approvals": [
+    "Infrastructure approver",
+    "Service owner"
+  ],
+  "state": "ready_for_review",
+  "expires_at": "2026-07-12T12:00:00Z"
+}

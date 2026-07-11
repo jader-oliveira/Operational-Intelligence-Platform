@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-core
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-data
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-ai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-connectors
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-execution
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-observability

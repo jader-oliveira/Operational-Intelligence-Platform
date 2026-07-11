@@ -1,0 +1,15 @@
+stateDiagram-v2
+  [*] --> Detected
+  Detected --> Triaged
+  Triaged --> EvidenceCollecting
+  EvidenceCollecting --> Investigating
+  Investigating --> RecommendationReady
+  RecommendationReady --> AwaitingApproval
+  AwaitingApproval --> Rejected
+  AwaitingApproval --> Executing
+  Executing --> Verifying
+  Executing --> RolledBack
+  Verifying --> Resolved
+  Verifying --> Investigating: Verification failed
+  Resolved --> Learned
+  Learned --> [*]

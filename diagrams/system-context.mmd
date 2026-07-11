@@ -1,0 +1,15 @@
+flowchart LR
+  ENG[Engineers / Approvers] --> PORTAL[Portal and API]
+  SOURCES[VMware / Xen / Kubernetes / Monitoring / Logs / ITSM / Automation] --> OBS[Observer and Connector Runtime]
+  OBS --> STREAM[Canonical Event Stream]
+  STREAM --> DATA[Telemetry and Metadata Stores]
+  DATA --> GRAPH[Knowledge and Decision Graph]
+  DATA --> EVID[Evidence Engine]
+  GRAPH --> EVID
+  EVID --> REASON[Reasoner / Predictor / Guardian / Advisor]
+  REASON --> POLICY[Policy and Approval]
+  POLICY --> ORCH[Orchestrator]
+  ORCH --> TOOLS[AWX / Terraform / PowerCLI / GitLab]
+  REASON --> EVAL[AI Evaluation and Governance]
+  ORCH --> EVAL
+  EVAL --> PORTAL

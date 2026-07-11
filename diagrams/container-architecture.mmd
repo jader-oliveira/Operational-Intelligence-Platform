@@ -1,0 +1,59 @@
+flowchart TB
+  subgraph Sources
+    VC[vCenter / ESXi]
+    XEN[Xen]
+    K8S[Kubernetes]
+    TEL[Metrics / Logs / Events]
+    ITSM[ITSM / CMDB / Git]
+  end
+
+  subgraph Collection
+    SDK[Connector SDK]
+    CR[Connector Runtime]
+    OBS[Observer]
+  end
+
+  subgraph Data
+    RP[Redpanda]
+    PG[PostgreSQL + AGE + pgvector]
+    MET[Prometheus / Thanos or Mimir]
+    OS[OpenSearch]
+    OBJ[MinIO]
+  end
+
+  subgraph Intelligence
+    KG[Knowledge Graph]
+    EE[Evidence Engine]
+    MG[Model Gateway]
+    R[RCA Reasoner]
+    P[Predictor]
+    G[Guardian]
+    A[Advisor]
+    OD[Operations DNA]
+  end
+
+  subgraph Control
+    OPA[OPA Policy]
+    APR[Approval Service]
+    TMP[Temporal]
+    EX[Execution Adapters]
+  end
+
+  subgraph Experience
+    API[API Gateway]
+    UI[React Portal]
+    GOV[AI Governance Dashboard]
+  end
+
+  VC & XEN & K8S & TEL & ITSM --> CR
+  SDK --> CR --> OBS --> RP
+  RP --> PG & MET & OS & OBJ
+  PG --> KG
+  PG & MET & OS & OBJ & KG --> EE
+  EE --> R & P & G & A
+  MG --> R & A
+  OD --> R & A
+  R & P & G & A --> OPA --> APR --> TMP --> EX
+  UI --> API
+  API --> EE & R & P & G & A & APR
+  R & A & EX --> GOV

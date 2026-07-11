@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Asset",
+  "type": "object",
+  "required": [
+    "id",
+    "asset_type",
+    "source",
+    "source_id",
+    "environment",
+    "observed_at",
+    "schema_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "asset_type": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "business_service": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "labels": {
+      "type": "object"
+    },
+    "schema_version": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+global:
+  environment: lab
+  imageRegistry: repository.example.com
+  oidcIssuer: https://keycloak.example.com/realms/boip
+  externalSecrets: true
+
+observer:
+  replicas: 2
+  adaptivePolling: true
+
+evidenceEngine:
+  replicas: 2
+  maxConcurrentInvestigations: 10
+
+modelGateway:
+  enabled: true
+  defaultModel: reasoning-default
+  maxContextTokens: 65536
+
+execution:
+  enabled: false
+  requireHumanApproval: true
+  adapters:
+    awx: true
+    terraform: true
+    powercli: true
+
+policy:
+  opa:
+    enabled: true
+
+observability:
+  otel: true
+  prometheus: true
+  grafana: true

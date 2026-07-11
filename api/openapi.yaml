@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: BreuTech Operational Intelligence Platform API
+  version: 0.1.0
+servers:
+  - url: /api/v1
+paths:
+  /assets:
+    get:
+      summary: Search canonical assets
+      parameters:
+        - in: query
+          name: type
+          schema: {type: string}
+        - in: query
+          name: environment
+          schema: {type: string}
+      responses:
+        "200":
+          description: Asset page
+  /incidents:
+    post:
+      summary: Create an incident workspace
+      responses:
+        "202":
+          description: Incident accepted
+  /incidents/{incidentId}/investigate:
+    post:
+      summary: Start or deepen an evidence-backed investigation
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: {type: string}
+      responses:
+        "202":
+          description: Durable workflow started
+  /incidents/{incidentId}/recommendations:
+    get:
+      summary: List recommendations and lifecycle state
+      parameters:
+        - in: path
+          name: incidentId
+          required: true
+          schema: {type: string}
+      responses:
+        "200":
+          description: Recommendation list
+  /recommendations/{recommendationId}/approve:
+    post:
+      summary: Approve a recommendation subject to policy
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string}
+      responses:
+        "202":
+          description: Approval recorded or further approval requested
+  /recommendations/{recommendationId}/execute:
+    post:
+      summary: Execute an approved recommendation
+      parameters:
+        - in: path
+          name: recommendationId
+          required: true
+          schema: {type: string}
+      responses:
+        "202":
+          description: Execution workflow started
+  /governance/metrics:
+    get:
+      summary: Retrieve AI and business-value metrics
+      responses:
+        "200":
+          description: Governance metrics
