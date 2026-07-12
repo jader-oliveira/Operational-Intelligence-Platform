@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS recommendation (
     rollback      JSONB       NOT NULL,
     verification  JSONB       NOT NULL,
     awx_template_id TEXT,
-    gitlab_mr_url TEXT,
+    approval_url  TEXT,                            -- Jenkins/CloudBees pipeline run gating execution (ADR 0015)
     state         TEXT        NOT NULL DEFAULT 'proposed',
     outcome       TEXT,                            -- accepted_correct | accepted_incorrect | rejected | expired
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()

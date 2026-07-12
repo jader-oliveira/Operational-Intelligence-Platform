@@ -130,6 +130,52 @@ def list_evidence(incident_id: int) -> list[dict]:
         ]
 
 
+def create_recommendation(
+    incident_id: int, summary: str, risk: str, confidence: float,
+    evidence_ids: list[int], steps: list[dict], rollback: list[dict], verification: list[dict],
+) -> dict:
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            """INSERT INTO recommendation
+               (incident_id, summary, risk, confidence, evidence_ids, steps, rollback, verification)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+               RETURNING id, incident_id, summary, risk, confidence, evidence_ids, steps,
+                         rollback, verification, awx_template_id, approval_url, state, outcome, created_at""",
+            (incident_id, summary, risk, confidence, evidence_ids,
+             Jsonb(steps), Jsonb(rollback), Jsonb(verification)),
+        )
+        return _recommendation_row(cur.fetchone())
+
+
+def get_recommendations_for_incident(incident_id: int) -> list[dict]:
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            """SELECT id, incident_id, summary, risk, confidence, evidence_ids, steps,
+                      rollback, verification, awx_template_id, approval_url, state, outcome, created_at
+               FROM recommendation WHERE incident_id = %s ORDER BY created_at DESC""",
+            (incident_id,),
+        )
+        return [_recommendation_row(r) for r in cur.fetchall()]
+
+
+def set_recommendation_approval(recommendation_id: int, approval_url: str, state: str) -> None:
+    with get_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            "UPDATE recommendation SET approval_url = %s, state = %s WHERE id = %s",
+            (approval_url, state, recommendation_id),
+        )
+
+
+def _recommendation_row(row) -> dict:
+    return {
+        "id": row[0], "incident_id": row[1], "summary": row[2], "risk": row[3],
+        "confidence": float(row[4]) if row[4] is not None else None, "evidence_ids": row[5],
+        "steps": row[6], "rollback": row[7], "verification": row[8],
+        "awx_template_id": row[9], "approval_url": row[10], "state": row[11],
+        "outcome": row[12], "created_at": row[13],
+    }
+
+
 def _incident_row(row) -> dict:
     return {
         "id": row[0], "title": row[1], "state": row[2], "source_alert": row[3],

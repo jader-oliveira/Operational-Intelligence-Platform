@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from . import investigate as investigate_module
 from . import queries
+from . import recommendation as recommendation_module
 
 app = FastAPI(title="boip-core", version="0.1.0")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -52,6 +53,14 @@ def run_investigation(incident_id: int, body: InvestigateRequest = InvestigateRe
         raise HTTPException(404, str(e))
 
 
+@app.post("/incidents/{incident_id}/recommend")
+def propose_recommendation(incident_id: int):
+    try:
+        return recommendation_module.propose_recommendation(incident_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request):
     incidents = queries.list_incidents()
@@ -67,6 +76,8 @@ def report_page(request: Request, incident_id: int):
         raise HTTPException(404, "incident not found")
     evidence = queries.list_evidence(incident_id)
     report = next((e["content"] for e in reversed(evidence) if e["kind"] == "investigation_report"), None)
+    recommendations = queries.get_recommendations_for_incident(incident_id)
     return templates.TemplateResponse(
-        "report.html", {"request": request, "incident": incident, "report": report}
+        "report.html",
+        {"request": request, "incident": incident, "report": report, "recommendations": recommendations},
     )

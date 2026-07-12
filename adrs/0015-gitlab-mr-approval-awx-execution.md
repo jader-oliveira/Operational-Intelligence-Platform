@@ -1,6 +1,6 @@
 # ADR 0015: GitLab merge requests as the approval workflow, AWX as the executor
 
-- **Status:** Accepted (supersedes the standalone Policy/Approval Service, Orchestrator, and Execution Adapters; defers Temporal and OPA)
+- **Status:** Superseded by [ADR 0018](0018-jenkins-cloudbees-approval-not-gitlab.md) — GitLab is not deployed in the target cluster; kept below for history (originally: Accepted, supersedes the standalone Policy/Approval Service, Orchestrator, and Execution Adapters; defers Temporal and OPA)
 - **Date:** 2026-07-12
 
 ## Context

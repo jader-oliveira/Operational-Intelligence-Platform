@@ -20,6 +20,14 @@
   .blast span { background: #1c2330; padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.85rem; }
   a.back { color: #6ea8fe; text-decoration: none; font-size: 0.9rem; }
   .no-report { color: #8a93a6; margin-top: 1rem; }
+  .rec { background: #14181f; border-radius: 6px; padding: 1rem 1.2rem; margin-top: 1rem; border-left: 3px solid #6ea8fe; }
+  .risk { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.8rem; margin-right: 0.5rem; }
+  .risk-low { background: #1a3a2a; color: #6fd08c; }
+  .risk-medium { background: #4a3b1a; color: #f0c674; }
+  .risk-high { background: #3a1a1a; color: #f28b82; }
+  .rec h3 { margin: 0 0 0.5rem 0; font-size: 0.95rem; font-weight: 500; }
+  .steplist { margin: 0.5rem 0 0 0; padding-left: 1.2rem; font-size: 0.85rem; color: #c5cad4; }
+  .steplist li { margin-bottom: 0.3rem; }
 </style>
 </head>
 <body>
@@ -61,6 +69,35 @@
 
   <h2>Evidence chain</h2>
   <p class="no-report">{{ report.evidence_ids | length }} evidence records, hash-anchored at write time, ids: {{ report.evidence_ids }}</p>
+
+  <h2>Recommendation</h2>
+  {% if recommendations %}
+  {% for r in recommendations %}
+  <div class="rec">
+    <span class="risk risk-{{ r.risk }}">{{ r.risk }} risk</span>
+    <span class="confidence">confidence {{ (r.confidence * 100) | round | int }}%</span>
+    <span class="state">{{ r.state }}</span>
+    <h3>{{ r.summary }}</h3>
+    <strong>Steps</strong>
+    <ul class="steplist">
+      {% for s in r.steps %}<li>{{ s.action }}: {{ s.asset }}.{{ s.path }} {{ s.from_value }} → {{ s.to_value }}</li>{% endfor %}
+    </ul>
+    <strong>Rollback</strong>
+    <ul class="steplist">
+      {% for s in r.rollback %}<li>{{ s.action }}: {{ s.asset }}.{{ s.path }} {{ s.from_value }} → {{ s.to_value }} ({{ s.note }})</li>{% endfor %}
+    </ul>
+    <strong>Verification</strong>
+    <ul class="steplist">
+      {% for v in r.verification %}<li>{{ v.check }}{% if v.asset %} on {{ v.asset }}{% endif %}{% if v.note %} — {{ v.note }}{% endif %}</li>{% endfor %}
+    </ul>
+    {% if r.approval_url %}
+    <p class="no-report">Approval pipeline: <a href="{{ r.approval_url }}">{{ r.approval_url }}</a></p>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="no-report">No recommendation yet. POST /incidents/{{ incident.id }}/recommend to generate one.</p>
+  {% endif %}
   {% else %}
   <p class="no-report">No investigation has been run yet. POST /incidents/{{ incident.id }}/investigate to generate this report.</p>
   {% endif %}
