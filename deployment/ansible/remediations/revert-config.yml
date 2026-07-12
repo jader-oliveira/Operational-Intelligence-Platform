@@ -1,0 +1,100 @@
+---
+# BOIP remediation: revert_config
+#
+# Reverts a single VM hardware attribute to a prior known value. Launched by
+# AWX with extra_vars matching recommendation.steps[0] from boip-core:
+#   asset       - VM name (vCenter inventory name, not the moref)
+#   path        - currently supports: memory_mb, cpus
+#   from_value  - the value being reverted away from (used only to assert
+#                 the live VM still matches what boip-core observed, so we
+#                 refuse to "revert" a value nobody actually holds anymore)
+#   to_value    - the value to revert to
+#
+# Un-reviewed AWX job templates should not point at this without a real
+# read-write vCenter credential attached (see deployment/jenkins/
+# remediation-pipeline.Jenkinsfile and ADR 0018) — it is inert without one.
+#
+# Not yet exercised against a live vCenter or vcsim in this environment
+# (no Go toolchain available to build vcsim here) — syntax-checked and
+# ansible-lint clean only. Run it against vcsim before attaching a real
+# credential to the AWX job template.
+
+- name: BOIP - revert VM config change
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vcenter_hostname: "{{ lookup('env', 'VCENTER_HOST') }}"
+    vcenter_username: "{{ lookup('env', 'VCENTER_USER') }}"
+    vcenter_password: "{{ lookup('env', 'VCENTER_PASSWORD') }}"
+    vcenter_validate_certs: false
+    supported_paths: [memory_mb, cpus]
+
+  pre_tasks:
+    - name: Fail fast on an unsupported remediation path
+      ansible.builtin.fail:
+        msg: "revert-config.yml only supports {{ supported_paths }}, got: {{ path }}"
+      when: path not in supported_paths
+
+    - name: Look up current VM state
+      community.vmware.vmware_guest_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        name: "{{ asset }}"
+      register: vm_info
+
+    - name: Refuse to revert a value that has already moved on
+      ansible.builtin.fail:
+        msg: >-
+          {{ asset }}.{{ path }} is currently
+          {{ vm_info.instance.hw_memtotal_mb if path == 'memory_mb' else vm_info.instance.hw_processor_count }},
+          not {{ from_value }} as boip-core observed. Refusing to revert against a
+          stale evidence snapshot — re-run the investigation.
+      when: >
+        (path == 'memory_mb' and vm_info.instance.hw_memtotal_mb | int != from_value | int)
+        or (path == 'cpus' and vm_info.instance.hw_processor_count | int != from_value | int)
+
+    - name: Pre-flight snapshot before any change
+      vmware.vmware.vm_snapshot:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        name: "{{ asset }}"
+        state: present
+        snapshot_name: "boip-pre-remediation-{{ lookup('pipe', 'date +%Y%m%dT%H%M%S') }}"
+        description: "Automatic pre-change snapshot before BOIP revert of {{ path }}"
+      register: preflight_snapshot
+
+  tasks:
+    - name: Revert memory_mb
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        name: "{{ asset }}"
+        hardware:
+          memory_mb: "{{ to_value }}"
+        state: present
+      when: path == 'memory_mb'
+
+    - name: Revert cpus
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: "{{ vcenter_validate_certs }}"
+        name: "{{ asset }}"
+        hardware:
+          num_cpus: "{{ to_value }}"
+        state: present
+      when: path == 'cpus'
+
+  post_tasks:
+    - name: Report the snapshot boip-core's verification step should check against
+      ansible.builtin.debug:
+        msg: "Pre-remediation snapshot: {{ preflight_snapshot.snapshot.name | default('n/a') }}"
