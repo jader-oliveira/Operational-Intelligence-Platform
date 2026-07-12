@@ -1,0 +1,122 @@
+# boip_vmware_toolset.yaml
+#
+# HolmesGPT custom toolset: read-only VMware vCenter investigation tools.
+# Load with:  holmes ask "..." -t /path/to/boip_vmware_toolset.yaml
+#
+# Requirements:
+#   * python3 + pyvmomi installed in the environment where holmes runs
+#   * vcenter_tools.py reachable at ${BOIP_TOOLS_DIR}/vcenter_tools.py
+#   * env vars: VCENTER_HOST, VCENTER_USER, VCENTER_PASSWORD,
+#               VCENTER_PORT (default 443), VCENTER_INSECURE (true for lab),
+#               BOIP_TOOLS_DIR (directory containing vcenter_tools.py)
+#
+# Conventions used below:
+#   {{ variable }}  -> parameter the LLM fills in from context (Jinja2)
+#   ${VAR}          -> environment variable resolved at execution time
+
+toolsets:
+  boip/vcenter:
+    description: >
+      Read-only VMware vCenter investigation tools. Use these whenever the
+      question involves virtual machines, ESXi hosts, vSphere clusters,
+      datastores, VM performance (CPU ready, ballooning, disk latency),
+      vCenter events/tasks, triggered alarms, or VM snapshots.
+      All tools are strictly read-only and safe to run during incidents.
+    tags:
+      - cli
+    prerequisites:
+      - env:
+          - VCENTER_HOST
+          - VCENTER_USER
+          - VCENTER_PASSWORD
+          - BOIP_TOOLS_DIR
+      - command: "python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py check"
+
+    additional_instructions: >
+      Interpretation guidance: cpu ready_pct_of_interval above 5% sustained
+      means CPU contention on the ESXi host (too many vCPUs scheduled).
+      mem_ballooned_kb above 0 means the host is under memory pressure and
+      reclaiming guest memory. disk_max_latency_ms above 20-30ms sustained
+      indicates a storage bottleneck; correlate with datastore-summary and
+      with snapshots (old snapshots cause delta-file latency). Always check
+      'events' for the time window around the incident to find recent
+      migrations, reconfigurations, or user actions, and cite specific event
+      messages and metric values as evidence in your conclusions.
+
+    tools:
+      - name: vcenter_list_vms
+        description: >
+          List virtual machines with power state, host placement, sizing and
+          health status. Supports substring name filtering. Use this first to
+          discover exact VM names before calling per-VM tools.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py list-vms
+          --limit 100 --filter-name '{{ name_filter }}'
+
+      - name: vcenter_vm_summary
+        description: >
+          Detailed summary of one VM: power/connection state, host, datastores,
+          VMware Tools status, IP, CPU/memory config, quick stats (ballooned
+          and swapped memory), config issues, disks, NICs, and snapshots.
+          Requires the exact VM name.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py vm-summary
+          --name '{{ vm_name }}'
+
+      - name: vcenter_vm_perf
+        description: >
+          Real-time performance metrics for one VM over the last ~10 minutes:
+          CPU usage, CPU ready time (contention), memory usage, ballooning,
+          swapping, max disk latency, network usage. Includes avg/max/latest
+          per metric. Use for any VM slowness or latency investigation.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py vm-perf
+          --name '{{ vm_name }}' --samples 30
+
+      - name: vcenter_host_summary
+        description: >
+          Summary of all ESXi hosts: connection state, maintenance mode,
+          CPU/memory usage and capacity, running VM count, ESXi version,
+          uptime. Use to check host-level pressure or host outages.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py host-summary
+
+      - name: vcenter_datastore_summary
+        description: >
+          All datastores with capacity, free space, used percentage,
+          accessibility and VM count, sorted by fullest first. Use for
+          storage capacity or datastore accessibility questions.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py datastore-summary
+
+      - name: vcenter_events
+        description: >
+          vCenter events for a recent time window in minutes (migrations,
+          reconfigurations, power operations, logins, DRS actions, HA events).
+          Essential for answering "what changed before the incident?".
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py events
+          --minutes {{ minutes }} --limit 50
+
+      - name: vcenter_events_for_vm
+        description: >
+          vCenter events scoped to one specific VM for a recent time window
+          in minutes. Use when investigating a specific VM's history.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py events
+          --minutes {{ minutes }} --entity '{{ vm_name }}' --limit 50
+
+      - name: vcenter_alarms
+        description: >
+          Currently triggered vCenter alarms (yellow/red) with affected
+          entity and trigger time. Check early in every investigation.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py alarms
+
+      - name: vcenter_snapshots
+        description: >
+          All VM snapshots across the environment with age in days, oldest
+          first. Old snapshots are a classic cause of storage latency and
+          datastore space exhaustion.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/vcenter_tools.py snapshots
