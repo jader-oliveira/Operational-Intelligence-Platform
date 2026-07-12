@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BOIP — {{ incident.title }}</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 2rem; background: #0b0e14; color: #e6e6e6; max-width: 900px; }
+  h1 { font-weight: 600; margin-bottom: 0.2rem; }
+  .meta { color: #8a93a6; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .summary { background: #14181f; border-left: 3px solid #6fd08c; padding: 1rem 1.2rem; border-radius: 4px; margin-bottom: 1.5rem; }
+  .confidence { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; background: #1a3a2a; color: #6fd08c; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1rem; text-transform: uppercase; color: #8a93a6; letter-spacing: 0.05em; margin-top: 2rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; }
+  th, td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid #2a2f3a; font-size: 0.9rem; }
+  th { color: #8a93a6; font-weight: 500; }
+  .score-bar { display: inline-block; height: 6px; background: #6ea8fe; border-radius: 3px; vertical-align: middle; margin-right: 0.5rem; }
+  .val-old { color: #f28b82; }
+  .val-new { color: #6fd08c; }
+  .blast { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+  .blast span { background: #1c2330; padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.85rem; }
+  a.back { color: #6ea8fe; text-decoration: none; font-size: 0.9rem; }
+  .no-report { color: #8a93a6; margin-top: 1rem; }
+</style>
+</head>
+<body>
+  <a class="back" href="/">← all incidents</a>
+  <h1>{{ incident.title }}</h1>
+  <div class="meta">Incident #{{ incident.id }} · asset: {{ incident.source_alert.asset }} · state: {{ incident.state }} · opened {{ incident.opened_at }}</div>
+
+  {% if report %}
+  <div class="confidence">confidence {{ (report.confidence * 100) | round | int }}%</div>
+  <div class="summary">{{ report.summary }}</div>
+
+  <h2>Ranked evidence — what changed in the last {{ report.lookback_hours }}h</h2>
+  {% if report.ranked_changes %}
+  <table>
+    <tr><th>Score</th><th>Asset</th><th>Path</th><th>Old</th><th>New</th><th>Detected</th></tr>
+    {% for c in report.ranked_changes %}
+    <tr>
+      <td><span class="score-bar" style="width: {{ (c.score * 60) | round | int }}px;"></span>{{ "%.2f"|format(c.score) }}</td>
+      <td>{{ c.asset }}</td>
+      <td>{{ c.path }}</td>
+      <td class="val-old">{{ c.old_value }}</td>
+      <td class="val-new">{{ c.new_value }}</td>
+      <td>{{ c.detected_at }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="no-report">No config changes found in the lookback window.</p>
+  {% endif %}
+
+  <h2>Blast radius — assets one hop from {{ report.asset }}</h2>
+  <div class="blast">
+    {% for n in report.blast_radius %}
+    <span>{{ n.name }} ({{ n.kind }}, {{ n.relation }})</span>
+    {% else %}
+    <span>no topology edges recorded</span>
+    {% endfor %}
+  </div>
+
+  <h2>Evidence chain</h2>
+  <p class="no-report">{{ report.evidence_ids | length }} evidence records, hash-anchored at write time, ids: {{ report.evidence_ids }}</p>
+  {% else %}
+  <p class="no-report">No investigation has been run yet. POST /incidents/{{ incident.id }}/investigate to generate this report.</p>
+  {% endif %}
+</body>
+</html>

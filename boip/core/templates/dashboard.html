@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BOIP — Incidents</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 2rem; background: #0b0e14; color: #e6e6e6; }
+  h1 { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid #2a2f3a; }
+  th { color: #8a93a6; font-weight: 500; font-size: 0.85rem; text-transform: uppercase; }
+  a { color: #6ea8fe; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .state { padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.8rem; }
+  .state-new { background: #3a3f4b; }
+  .state-investigating { background: #4a3b1a; color: #f0c674; }
+  .state-report_ready { background: #1a3a2a; color: #6fd08c; }
+  .empty { color: #8a93a6; margin-top: 2rem; }
+</style>
+</head>
+<body>
+  <h1>BOIP — Operational Intelligence</h1>
+  {% if incidents %}
+  <table>
+    <tr><th>ID</th><th>Title</th><th>Asset</th><th>State</th><th>Opened</th><th></th></tr>
+    {% for i in incidents %}
+    <tr>
+      <td>{{ i.id }}</td>
+      <td>{{ i.title }}</td>
+      <td>{{ i.source_alert.asset }}</td>
+      <td><span class="state state-{{ i.state }}">{{ i.state }}</span></td>
+      <td>{{ i.opened_at }}</td>
+      <td><a href="/incidents/{{ i.id }}/report">report →</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="empty">No incidents yet. POST /incidents to open one.</p>
+  {% endif %}
+</body>
+</html>
