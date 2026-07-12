@@ -8,11 +8,16 @@
 // AWX before that happens. This is ADR 0001 (human approval before
 // production change) enforced as infrastructure, not a comment.
 //
-// AWX_JOB_TEMPLATE below is a placeholder: the three remediation-type job
-// templates (storage vMotion, k8s workload resize/restart, config revert)
-// from the MVP plan's weeks 6-7 have not been written yet. Wire the real
-// template name in once it exists — do not point this at a template you
-// haven't reviewed.
+// Status as of ADR 0018: one real remediation type exists —
+// boip-revert-config (AWX job template id 9, playbook
+// deployment/ansible/remediations/revert-config.yml, synced from this repo).
+// It has NO credential attached in AWX, so it cannot execute against
+// vCenter yet — attach a real vCenter machine credential there first.
+// The 'awx-api-token' Jenkins credential exists and is read-only-safe to
+// use for the status check below; the actual launch call is still
+// commented out because its shell script has not been exercised against
+// a real Jenkins agent in this environment — do not enable it without
+// testing on a non-production job first.
 
 pipeline {
     agent any
@@ -25,7 +30,9 @@ pipeline {
 
     environment {
         BOIP_CORE_URL = credentials('boip-core-url')
-        AWX_JOB_TEMPLATE = 'CHANGE-ME-not-yet-built'
+        AWX_URL = 'https://awx.breutech-solutions.be'
+        AWX_JOB_TEMPLATE_ID = '9'
+        AWX_JOB_TEMPLATE_NAME = 'boip-revert-config'
     }
 
     stages {
@@ -49,9 +56,20 @@ pipeline {
 
         stage('Execute via AWX') {
             steps {
-                echo "Would launch AWX job template ${AWX_JOB_TEMPLATE} for recommendation ${params.recommendation_id}."
-                echo 'Not wired yet — see comment at top of this file. Fails closed until it is.'
-                error('AWX_JOB_TEMPLATE is a placeholder — wire the real template before enabling execution.')
+                withCredentials([string(credentialsId: 'awx-api-token', variable: 'AWX_TOKEN')]) {
+                    sh '''
+                        echo "Checking AWX job template ${AWX_JOB_TEMPLATE_NAME} (id ${AWX_JOB_TEMPLATE_ID}) for an attached credential..."
+                        curl -sf -H "Authorization: Bearer $AWX_TOKEN" \
+                             "$AWX_URL/api/v2/job_templates/${AWX_JOB_TEMPLATE_ID}/" -o job_template.json
+                        cat job_template.json
+                    '''
+                }
+                // Deliberately not launching: (1) no vCenter credential is attached to
+                // the job template yet, and (2) the launch call itself hasn't been
+                // exercised against a real Jenkins agent in this environment. Both must
+                // be resolved and verified — on a non-production job first — before
+                // this stage should call POST /api/v2/job_templates/{id}/launch/.
+                error("Execution intentionally disabled — see comment above stage('Execute via AWX').")
             }
         }
 
