@@ -1,0 +1,5 @@
+line-length = 100
+
+[lint.per-file-ignores]
+# SIGPIPE handler must run before the pyVmomi imports it protects — intentional ordering.
+"week1/vcenter_tools.py" = ["E402"]

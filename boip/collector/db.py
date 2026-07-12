@@ -5,7 +5,6 @@ snapshot-then-diff write path. DSN from env BOIP_DB_DSN, e.g.
 
 from __future__ import annotations
 
-import json
 import os
 
 import psycopg
