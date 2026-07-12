@@ -1,0 +1,52 @@
+# boip_changes_toolset.yaml
+#
+# HolmesGPT toolset: BOIP change history and topology.
+# Load alongside the vCenter toolset:
+#   holmes ask "..." -t boip_vmware_toolset.yaml -t boip_changes_toolset.yaml
+#
+# Requires: BOIP_DB_DSN and BOIP_TOOLS_DIR env vars, psycopg installed.
+
+toolsets:
+  boip/changes:
+    description: >
+      BOIP versioned configuration history and dependency topology.
+      Use boip_recent_changes in EVERY infrastructure investigation to answer
+      "what changed before the incident?" — config changes (CPU/memory resize,
+      power state, disks added/removed, snapshots created, host placement,
+      datastore accessibility) are the most common root cause. Use
+      boip_topology to determine what an asset depends on and its blast radius.
+    tags:
+      - cli
+    prerequisites:
+      - env:
+          - BOIP_DB_DSN
+          - BOIP_TOOLS_DIR
+      - command: "python3 ${BOIP_TOOLS_DIR}/changes_tool.py changes --hours 1 --limit 1"
+    additional_instructions: >
+      When a change correlates in time with the incident, cite the exact path,
+      old_value and new_value as evidence, then cross-check vcenter_events for
+      the same window to attribute the change to a user and exact timestamp.
+    tools:
+      - name: boip_recent_changes
+        description: >
+          List configuration changes across the whole estate in the last N
+          hours: what changed, on which asset, old and new value. Call this
+          early in every investigation.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/changes_tool.py changes --hours {{ hours }} --limit 100
+
+      - name: boip_changes_for_asset
+        description: >
+          Configuration change history for one specific VM, host, or datastore
+          (exact asset name) over the last N hours.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/changes_tool.py changes
+          --hours {{ hours }} --asset '{{ asset_name }}' --limit 100
+
+      - name: boip_topology
+        description: >
+          Dependency topology for one asset: what it runs on / is stored on,
+          and the blast radius (which assets depend on it). Use to assess
+          impact and to find shared infrastructure between affected VMs.
+        command: >
+          python3 ${BOIP_TOOLS_DIR}/changes_tool.py topology --asset '{{ asset_name }}'
